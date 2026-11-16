@@ -26,6 +26,12 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = Color(0xFF9A97AC)
 )
 
+private val AmoledColorScheme = DarkColorScheme.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceVariant = Color(0xFF14161C)
+)
+
 private val LightColorScheme = lightColorScheme(
     primary = PurpleDark,
     secondary = Purple,
@@ -40,11 +46,17 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun MusicaTheme(
+    amoled: Boolean = false,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    val colorScheme = when {
+        darkTheme && amoled -> AmoledColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+        colorScheme = colorScheme,
         content = content
     )
 }

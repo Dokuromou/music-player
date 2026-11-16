@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,10 +16,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +42,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.musica.player.MusicPlayerViewModel
+import com.musica.player.ui.theme.MusicaTheme
+
+private enum class Tab(val label: String) {
+    SONGS("Songs"),
+    ALBUMS("Albums"),
+    ARTISTS("Artists"),
+    PLAYLISTS("Playlists"),
+    SETTINGS("Settings")
+}
 
 @Composable
 fun MusicaApp(viewModel: MusicPlayerViewModel) {
@@ -44,9 +58,8 @@ fun MusicaApp(viewModel: MusicPlayerViewModel) {
 
     var hasAudioPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context, audioPermission()
-            ) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, audioPermission()) ==
+                PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -72,10 +85,14 @@ fun MusicaApp(viewModel: MusicPlayerViewModel) {
         }
     }
 
-    if (!hasAudioPermission) {
-        PermissionScreen(onRequest = { audioPermissionLauncher.launch(audioPermission()) })
-    } else {
-        MainScreen(viewModel)
+    val amoled by viewModel.amoled.collectAsState()
+
+    MusicaTheme(amoled = amoled) {
+        if (!hasAudioPermission) {
+            PermissionScreen(onRequest = { audioPermissionLauncher.launch(audioPermission()) })
+        } else {
+            MainScreen(viewModel)
+        }
     }
 }
 
@@ -92,9 +109,9 @@ private fun PermissionScreen(onRequest: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.weight(1f))
         Icon(
             imageVector = Icons.Filled.LibraryMusic,
             contentDescription = null,
@@ -119,34 +136,97 @@ private fun PermissionScreen(onRequest: () -> Unit) {
         Button(onClick = onRequest) {
             Text(text = "Grant access")
         }
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun MainScreen(viewModel: MusicPlayerViewModel) {
     val currentSong by viewModel.currentSong.collectAsState()
+    var tab by remember { mutableStateOf(Tab.SONGS) }
+    var detail by remember { mutableStateOf<DetailScreen?>(null) }
     var nowPlayingOpen by remember { mutableStateOf(false) }
 
     BackHandler(enabled = nowPlayingOpen) { nowPlayingOpen = false }
+    BackHandler(enabled = !nowPlayingOpen && detail != null) { detail = null }
 
-    Scaffold { innerPadding ->
+    Scaffold(
+        bottomBar = {
+            Column {
+                AnimatedVisibility(
+                    visible = currentSong != null && !nowPlayingOpen,
+                    enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it })
+                ) {
+                    MiniPlayerBar(
+                        viewModel = viewModel,
+                        onOpenNowPlaying = { nowPlayingOpen = true }
+                    )
+                }
+                NavigationBar {
+                    Tab.entries.forEach { t ->
+                        NavigationBarItem(
+                            selected = tab == t && detail == null,
+                            onClick = {
+                                tab = t
+                                detail = null
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = when (t) {
+                                        Tab.SONGS -> Icons.Filled.LibraryMusic
+                                        Tab.ALBUMS -> Icons.Filled.Album
+                                        Tab.ARTISTS -> Icons.Filled.Person
+                                        Tab.PLAYLISTS -> Icons.Filled.QueueMusic
+                                        Tab.SETTINGS -> Icons.Filled.Settings
+                                    },
+                                    contentDescription = t.label
+                                )
+                            },
+                            label = { Text(t.label) }
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            LibraryScreen(
-                viewModel = viewModel,
-                modifier = Modifier.weight(1f)
-            )
-            AnimatedVisibility(
-                visible = currentSong != null && !nowPlayingOpen,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it })
-            ) {
-                MiniPlayerBar(
-                    viewModel = viewModel,
-                    onOpenNowPlaying = { nowPlayingOpen = true }
+            when {
+                detail is DetailScreen.Album -> DetailScreenHost(
+                    viewModel, detail!!,
+                    onBack = { detail = null }
+                )
+                detail is DetailScreen.Artist -> DetailScreenHost(
+                    viewModel, detail!!,
+                    onBack = { detail = null }
+                )
+                detail is DetailScreen.Playlist -> DetailScreenHost(
+                    viewModel, detail!!,
+                    onBack = { detail = null }
+                )
+                tab == Tab.SONGS -> SongsScreen(viewModel, modifier = Modifier.weight(1f))
+                tab == Tab.ALBUMS -> AlbumsScreen(
+                    viewModel,
+                    onOpenAlbum = { detail = DetailScreen.Album(it) },
+                    modifier = Modifier.weight(1f)
+                )
+                tab == Tab.ARTISTS -> ArtistsScreen(
+                    viewModel,
+                    onOpenArtist = { detail = DetailScreen.Artist(it) },
+                    modifier = Modifier.weight(1f)
+                )
+                tab == Tab.PLAYLISTS -> PlaylistsScreen(
+                    viewModel,
+                    onOpenPlaylist = { detail = DetailScreen.Playlist(it) },
+                    modifier = Modifier.weight(1f)
+                )
+                tab == Tab.SETTINGS -> SettingsScreen(
+                    viewModel,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }

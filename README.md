@@ -5,14 +5,18 @@ already stored on your phone — nothing is uploaded, streamed, or tracked.
 
 ## Features
 
-- **Library** — automatically finds all music on your device (via MediaStore)
-- **Search** — filter by title, artist, or album
-- **Full playback controls** — play/pause, next/previous, seek bar
-- **Shuffle & repeat** — repeat one, repeat all, shuffle
-- **Background playback** — keeps playing when you leave the app, with
-  lock-screen / notification controls (Media3 + MediaSession)
-- **Album artwork** — shown in the library, mini-player, and Now Playing screen
-- **Modern UI** — Jetpack Compose, Material 3, light & dark themes
+- **Library** — finds all music on your device automatically (MediaStore)
+- **Browse by Albums & Artists** — with artwork grid and detail views
+- **Playlists** — create your own, add songs with a long-press, play or delete them
+- **Favorites** — tap the heart on any song
+- **Recently played** — automatic history
+- **Queue view** — see what's up next, jump to any song, remove songs
+- **Search & sorting** — filter by title/artist/album, sort by title, artist, album, duration or recently added
+- **Sleep timer** — 15/30/60 minutes
+- **Playback speed** — 0.5x to 2.0x
+- **Full playback controls** — play/pause, next/previous, seek bar, shuffle, repeat one/all
+- **Background playback** — lock-screen / notification controls (Media3 + MediaSession)
+- **Pure black (AMOLED) theme** — saves battery on OLED screens
 - **No internet permission** — the app physically cannot send your data anywhere
 
 ## Tech stack
@@ -23,40 +27,25 @@ already stored on your phone — nothing is uploaded, streamed, or tracked.
 | UI         | Jetpack Compose + Material 3        |
 | Playback   | Media3 (ExoPlayer + MediaSession)   |
 | Metadata   | MediaStore API + Coil (artwork)     |
+| Storage    | SharedPreferences (playlists, favorites) |
 | Build      | Gradle 8.6, AGP 8.2.2, JDK 17       |
 
 ## Getting the app on your phone
 
-### Option A — download the ready-made APK (easiest)
+**Direct download (no GitHub navigation needed):**
 
-1. Open this repo on your phone's browser:
-   `https://github.com/Dokuromou/music-player`
-2. Go to the **Actions** tab and open the latest green **Build APK** run.
-3. Scroll to **Artifacts** and tap **Musica-debug-apk** to download it.
-4. Open the downloaded file. Android will ask to allow installing from your
-   browser ("Install unknown apps") — allow it once, then tap **Install**.
-5. Open **Musica**, grant access to your music, and enjoy.
+Open this link on your phone:
 
-> If the Actions tab has no runs yet, they start automatically on every push to
-> `main`. You can also trigger one manually: **Actions → Build APK → Run workflow**.
+https://github.com/Dokuromou/music-player/raw/main/app-debug.apk
 
-### Option B — build it yourself
+Then open the downloaded file and install (allow "install unknown apps" when asked).
+
+**Or build it yourself:**
 
 ```bash
 git clone https://github.com/Dokuromou/music-player.git
 cd music-player
 ./gradlew assembleDebug
-# APK at app/build/outputs/apk/debug/app-debug.apk
-```
-
-Or open the project in Android Studio and press **Run**.
-
-### Option C — install from a computer (ADB)
-
-Enable **Developer options → USB debugging** on the phone, connect it, then:
-
-```bash
-adb install app-debug.apk
 ```
 
 ## Project structure
@@ -64,18 +53,26 @@ adb install app-debug.apk
 ```
 app/src/main/java/com/musica/player/
 ├── MainActivity.kt              # Entry point, Compose host
-├── MusicPlayerViewModel.kt      # MediaController wiring + UI state
+├── MusicPlayerViewModel.kt      # MediaController wiring + all UI state
 ├── data/
 │   ├── Song.kt                  # Song model → MediaItem mapping
+│   ├── Playlist.kt              # Playlist model
+│   ├── LocalStore.kt            # Persistent favorites/playlists/history/theme
 │   └── MediaStoreRepository.kt  # Reads the device music library
 ├── playback/
 │   └── PlaybackService.kt       # MediaSessionService (background playback)
 └── ui/
-    ├── MusicaApp.kt             # Root, permission flow, navigation
-    ├── LibraryScreen.kt         # Song list + search
+    ├── MusicaApp.kt             # Root, permissions, bottom navigation
+    ├── SongsScreen.kt           # Song list, search, sorting
+    ├── AlbumsScreen.kt          # Album grid
+    ├── ArtistsScreen.kt         # Artist list
+    ├── PlaylistsScreen.kt       # Playlists + dialogs
+    ├── DetailScreens.kt         # Album/artist/playlist detail
     ├── MiniPlayer.kt            # Bottom mini-player bar
-    ├── NowPlayingScreen.kt      # Full-screen player
-    └── theme/Theme.kt           # Material 3 theming
+    ├── NowPlayingScreen.kt      # Full player: queue, sleep timer, speed
+    ├── Components.kt            # Shared rows/artwork
+    ├── SettingsScreen.kt        # Theme, timer, speed, rescan, about
+    └── theme/Theme.kt           # Material 3 theming (+ AMOLED)
 ```
 
 ## Notes
