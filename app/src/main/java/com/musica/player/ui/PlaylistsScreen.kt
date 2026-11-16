@@ -42,7 +42,8 @@ import com.musica.player.data.Song
 fun PlaylistsScreen(
     viewModel: MusicPlayerViewModel,
     onOpenPlaylist: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showHeader: Boolean = true
 ) {
     val playlists by viewModel.playlists.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
@@ -50,21 +51,36 @@ fun PlaylistsScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Playlists",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Button(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(modifier = Modifier.size(4.dp))
-                Text("New")
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Playlists",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Button(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text("New")
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End
+            ) {
+                Button(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text("New")
+                }
             }
         }
 

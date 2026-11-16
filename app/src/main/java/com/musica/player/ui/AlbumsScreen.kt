@@ -53,16 +53,23 @@ fun buildAlbums(songs: List<Song>): List<AlbumInfo> =
         .sortedBy { it.name.lowercase() }
 
 @Composable
-fun AlbumsScreen(viewModel: MusicPlayerViewModel, onOpenAlbum: (String) -> Unit, modifier: Modifier = Modifier) {
+fun AlbumsScreen(
+    viewModel: MusicPlayerViewModel,
+    onOpenAlbum: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    showHeader: Boolean = true
+) {
     val songs by viewModel.songs.collectAsState()
     val albums = remember(songs) { buildAlbums(songs) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = "Albums",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        if (showHeader) {
+            Text(
+                text = "Albums",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
         if (albums.isEmpty()) {
             EmptyLibrary(hasAnySongs = songs.isEmpty())
         } else {

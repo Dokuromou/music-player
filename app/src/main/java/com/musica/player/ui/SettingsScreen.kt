@@ -133,7 +133,7 @@ fun SettingsScreen(viewModel: MusicPlayerViewModel, modifier: Modifier = Modifie
                 Text(text = "About", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Musica v1.1 — a fully offline music player. " +
+                    text = "Musica v1.2 — a fully offline music player. " +
                         "It has no internet permission: your music and data " +
                         "never leave this device.",
                     style = MaterialTheme.typography.bodySmall,

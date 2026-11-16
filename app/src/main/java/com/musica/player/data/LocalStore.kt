@@ -11,7 +11,10 @@ object LocalStore {
     private const val KEY_RECENT = "recently_played"
     private const val KEY_PLAYLISTS = "playlists"
     private const val KEY_AMOLED = "amoled"
+    private const val KEY_SEARCHES = "recent_searches"
+    private const val KEY_CUSTOM_ORDERS = "custom_orders"
     const val RECENT_LIMIT = 50
+    const val SEARCH_LIMIT = 8
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -78,5 +81,46 @@ object LocalStore {
 
     fun saveAmoled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_AMOLED, enabled).apply()
+    }
+
+    fun loadRecentSearches(context: Context): List<String> {
+        val raw = prefs(context).getString(KEY_SEARCHES, null) ?: return emptyList()
+        return runCatching {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).mapNotNull { arr.optString(it).takeIf { s -> s.isNotEmpty() } }
+        }.getOrDefault(emptyList())
+    }
+
+    fun saveRecentSearches(context: Context, searches: List<String>) {
+        val arr = JSONArray()
+        searches.take(SEARCH_LIMIT).forEach { arr.put(it) }
+        prefs(context).edit().putString(KEY_SEARCHES, arr.toString()).apply()
+    }
+
+    fun loadCustomOrders(context: Context): Map<String, List<Long>> {
+        val raw = prefs(context).getString(KEY_CUSTOM_ORDERS, null) ?: return emptyMap()
+        return runCatching {
+            val obj = JSONObject(raw)
+            obj.keys().asSequence().associateWith { key ->
+                val arr = obj.getJSONArray(key)
+                (0 until arr.length()).mapNotNull { arr.optLong(it, -1L).takeIf { v -> v >= 0 } }
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    fun saveCustomOrder(context: Context, key: String, songIds: List<Long>) {
+        val raw = prefs(context).getString(KEY_CUSTOM_ORDERS, null)
+        val obj = runCatching { JSONObject(raw ?: "{}") }.getOrDefault(JSONObject())
+        val arr = JSONArray()
+        songIds.forEach { arr.put(it) }
+        obj.put(key, arr)
+        prefs(context).edit().putString(KEY_CUSTOM_ORDERS, obj.toString()).apply()
+    }
+
+    fun clearCustomOrder(context: Context, key: String) {
+        val raw = prefs(context).getString(KEY_CUSTOM_ORDERS, null)
+        val obj = runCatching { JSONObject(raw ?: "{}") }.getOrDefault(JSONObject())
+        obj.remove(key)
+        prefs(context).edit().putString(KEY_CUSTOM_ORDERS, obj.toString()).apply()
     }
 }

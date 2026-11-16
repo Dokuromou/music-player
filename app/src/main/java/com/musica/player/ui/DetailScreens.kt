@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,11 +17,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,7 +50,8 @@ sealed interface DetailScreen {
 fun DetailScreenHost(
     viewModel: MusicPlayerViewModel,
     detail: DetailScreen,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEdit: (EditOrderRequest) -> Unit
 ) {
     val songs by viewModel.songs.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
@@ -56,42 +59,52 @@ fun DetailScreenHost(
 
     when (detail) {
         is DetailScreen.Album -> {
-            val albumSongs = songs.filter { it.album == detail.name }
+            val default = songs.filter { it.album == detail.name }
                 .sortedBy { it.title.lowercase() }
+            val display = viewModel.orderedSongs("album:${detail.name}", default)
             DetailContent(
                 viewModel = viewModel,
                 title = detail.name,
                 subtitle = "Album",
-                artworkUri = albumSongs.firstOrNull()?.artworkUri.orEmpty(),
-                songs = albumSongs,
+                storageKey = "album:${detail.name}",
+                artworkUri = display.firstOrNull()?.artworkUri ?: default.firstOrNull()?.artworkUri.orEmpty(),
+                songs = display,
                 favorites = favorites,
-                onBack = onBack
+                onBack = onBack,
+                onEdit = onEdit
             )
         }
         is DetailScreen.Artist -> {
-            val artistSongs = songs.filter { it.artist == detail.name }
+            val default = songs.filter { it.artist == detail.name }
                 .sortedBy { it.title.lowercase() }
+            val display = viewModel.orderedSongs("artist:${detail.name}", default)
             DetailContent(
                 viewModel = viewModel,
                 title = detail.name,
                 subtitle = "Artist",
-                artworkUri = artistSongs.firstOrNull()?.artworkUri.orEmpty(),
-                songs = artistSongs,
+                storageKey = "artist:${detail.name}",
+                artworkUri = display.firstOrNull()?.artworkUri ?: default.firstOrNull()?.artworkUri.orEmpty(),
+                songs = display,
                 favorites = favorites,
-                onBack = onBack
+                onBack = onBack,
+                onEdit = onEdit
             )
         }
         is DetailScreen.Playlist -> {
             if (detail.id == FAVORITES_ID) {
-                val favSongs = songs.filter { it.id in favorites }
+                val default = songs.filter { it.id in favorites }
+                val display = viewModel.orderedSongs("favorites", default)
                 DetailContent(
                     viewModel = viewModel,
                     title = "Favorites",
                     subtitle = "Playlist",
-                    artworkUri = favSongs.firstOrNull()?.artworkUri.orEmpty(),
-                    songs = favSongs,
+                    storageKey = "favorites",
+                    artworkUri = display.firstOrNull()?.artworkUri.orEmpty(),
+                    songs = display,
                     favorites = favorites,
                     onBack = onBack,
+                    onEdit = onEdit,
+                    allowRemoveInEdit = true,
                     onToggleFavorite = { viewModel.toggleFavorite(it) }
                 )
             } else {
@@ -103,10 +116,13 @@ fun DetailScreenHost(
                     viewModel = viewModel,
                     title = playlist?.name ?: "Playlist",
                     subtitle = "Playlist",
+                    storageKey = "playlist:${detail.id}",
                     artworkUri = playlistSongs.firstOrNull()?.artworkUri.orEmpty(),
                     songs = playlistSongs,
                     favorites = favorites,
                     onBack = onBack,
+                    onEdit = onEdit,
+                    allowRemoveInEdit = true,
                     playlistId = detail.id,
                     onRemoveFromPlaylist = { viewModel.removeFromPlaylist(detail.id, it) },
                     onDeletePlaylist = {
@@ -124,10 +140,13 @@ private fun DetailContent(
     viewModel: MusicPlayerViewModel,
     title: String,
     subtitle: String,
+    storageKey: String,
     artworkUri: String,
     songs: List<Song>,
     favorites: Set<Long>,
     onBack: () -> Unit,
+    onEdit: (EditOrderRequest) -> Unit,
+    allowRemoveInEdit: Boolean = false,
     playlistId: Long? = null,
     onToggleFavorite: ((Long) -> Unit)? = null,
     onRemoveFromPlaylist: ((Long) -> Unit)? = null,
@@ -149,6 +168,22 @@ private fun DetailContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.weight(1f))
+            if (songs.isNotEmpty()) {
+                IconButton(
+                    onClick = {
+                        onEdit(
+                            EditOrderRequest(
+                                storageKey = storageKey,
+                                title = title,
+                                songIds = songs.map { it.id },
+                                allowRemove = allowRemoveInEdit
+                            )
+                        )
+                    }
+                ) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit order")
+                }
+            }
             if (onDeletePlaylist != null) {
                 IconButton(onClick = onDeletePlaylist) {
                     Icon(
@@ -191,13 +226,24 @@ private fun DetailContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { viewModel.playQueue(songs, 0) },
-                    enabled = songs.isNotEmpty()
-                ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text("Play all")
+                Row {
+                    Button(
+                        onClick = { viewModel.playQueue(songs, 0) },
+                        enabled = songs.isNotEmpty()
+                    ) {
+                        Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Text("Play")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.playQueue(songs.shuffled(), 0) },
+                        enabled = songs.isNotEmpty()
+                    ) {
+                        Icon(Icons.Filled.Shuffle, contentDescription = null)
+                        Spacer(modifier = Modifier.size(4.dp))
+                        Text("Shuffle")
+                    }
                 }
             }
         }
@@ -232,10 +278,7 @@ private fun DetailContent(
                             isFavorite = song.id in favorites,
                             onClick = { viewModel.playQueue(songs, index) },
                             onLongClick = { },
-                            onToggleFavorite = {
-                                onToggleFavorite?.invoke(song.id)
-                                    ?: viewModel.toggleFavorite(song.id)
-                            }
+                            onToggleFavorite = { viewModel.toggleFavorite(song.id) }
                         )
                     }
                 }

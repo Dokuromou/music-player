@@ -48,16 +48,23 @@ fun buildArtists(songs: List<Song>): List<ArtistInfo> =
         .sortedBy { it.name.lowercase() }
 
 @Composable
-fun ArtistsScreen(viewModel: MusicPlayerViewModel, onOpenArtist: (String) -> Unit, modifier: Modifier = Modifier) {
+fun ArtistsScreen(
+    viewModel: MusicPlayerViewModel,
+    onOpenArtist: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    showHeader: Boolean = true
+) {
     val songs by viewModel.songs.collectAsState()
     val artists = remember(songs) { buildArtists(songs) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = "Artists",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        if (showHeader) {
+            Text(
+                text = "Artists",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
         if (artists.isEmpty()) {
             EmptyLibrary(hasAnySongs = songs.isEmpty())
         } else {

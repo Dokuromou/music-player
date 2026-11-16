@@ -50,7 +50,8 @@ fun SongsScreen(
     modifier: Modifier = Modifier,
     initialQuery: String = "",
     lockedSort: SortOrder? = null,
-    title: String = "Musica"
+    title: String = "Musica",
+    showHeader: Boolean = true
 ) {
     val songs by viewModel.songs.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
@@ -85,47 +86,45 @@ fun SongsScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.weight(1f)
-            )
-            if (lockedSort == SortOrder.RECENT) {
-                Icon(
-                    imageVector = Icons.Filled.History,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-            Text(
-                text = "${displayList.size} songs",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (lockedSort == null) {
-                IconButton(onClick = { sortMenuOpen = true }) {
-                    Icon(Icons.Filled.Sort, contentDescription = "Sort")
-                }
-                DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
-                    SortOrder.entries.forEach { order ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = order.label +
-                                        if (order == sortOrder) " ✓" else ""
-                                )
-                            },
-                            onClick = {
-                                sortOrder = order
-                                sortMenuOpen = false
-                            }
-                        )
+                Text(
+                    text = "${displayList.size} songs",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (lockedSort == null) {
+                    IconButton(onClick = { sortMenuOpen = true }) {
+                        Icon(Icons.Filled.Sort, contentDescription = "Sort")
+                    }
+                    DropdownMenu(
+                        expanded = sortMenuOpen,
+                        onDismissRequest = { sortMenuOpen = false }
+                    ) {
+                        SortOrder.entries.forEach { order ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = order.label +
+                                            if (order == sortOrder) " ✓" else ""
+                                    )
+                                },
+                                onClick = {
+                                    sortOrder = order
+                                    sortMenuOpen = false
+                                }
+                            )
+                        }
                     }
                 }
             }

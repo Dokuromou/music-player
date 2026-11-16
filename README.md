@@ -5,6 +5,11 @@ already stored on your phone — nothing is uploaded, streamed, or tracked.
 
 ## Features
 
+- **Spotify-style Home** — greeting, "Jump back in" shortcuts, shelves for albums, artists, playlists and favorites
+- **Search tab** — live results across songs, albums and artists + recent searches
+- **Your Library tab** — filter chips for Playlists / Artists / Albums / Songs
+- **Edit mode** — an edit button on every album, artist and playlist: reorder songs with arrows, remove songs, reset to default order
+
 - **Library** — finds all music on your device automatically (MediaStore)
 - **Browse by Albums & Artists** — with artwork grid and detail views
 - **Playlists** — create your own, add songs with a long-press, play or delete them

@@ -16,10 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -45,10 +44,9 @@ import com.musica.player.MusicPlayerViewModel
 import com.musica.player.ui.theme.MusicaTheme
 
 private enum class Tab(val label: String) {
-    SONGS("Songs"),
-    ALBUMS("Albums"),
-    ARTISTS("Artists"),
-    PLAYLISTS("Playlists"),
+    HOME("Home"),
+    SEARCH("Search"),
+    LIBRARY("Library"),
     SETTINGS("Settings")
 }
 
@@ -143,12 +141,16 @@ private fun PermissionScreen(onRequest: () -> Unit) {
 @Composable
 private fun MainScreen(viewModel: MusicPlayerViewModel) {
     val currentSong by viewModel.currentSong.collectAsState()
-    var tab by remember { mutableStateOf(Tab.SONGS) }
+    var tab by remember { mutableStateOf(Tab.HOME) }
     var detail by remember { mutableStateOf<DetailScreen?>(null) }
+    var editRequest by remember { mutableStateOf<EditOrderRequest?>(null) }
     var nowPlayingOpen by remember { mutableStateOf(false) }
 
     BackHandler(enabled = nowPlayingOpen) { nowPlayingOpen = false }
-    BackHandler(enabled = !nowPlayingOpen && detail != null) { detail = null }
+    BackHandler(enabled = !nowPlayingOpen && editRequest != null) { editRequest = null }
+    BackHandler(enabled = !nowPlayingOpen && editRequest == null && detail != null) {
+        detail = null
+    }
 
     Scaffold(
         bottomBar = {
@@ -166,18 +168,18 @@ private fun MainScreen(viewModel: MusicPlayerViewModel) {
                 NavigationBar {
                     Tab.entries.forEach { t ->
                         NavigationBarItem(
-                            selected = tab == t && detail == null,
+                            selected = tab == t && detail == null && editRequest == null,
                             onClick = {
                                 tab = t
                                 detail = null
+                                editRequest = null
                             },
                             icon = {
                                 Icon(
                                     imageVector = when (t) {
-                                        Tab.SONGS -> Icons.Filled.LibraryMusic
-                                        Tab.ALBUMS -> Icons.Filled.Album
-                                        Tab.ARTISTS -> Icons.Filled.Person
-                                        Tab.PLAYLISTS -> Icons.Filled.QueueMusic
+                                        Tab.HOME -> Icons.Filled.Home
+                                        Tab.SEARCH -> Icons.Filled.Search
+                                        Tab.LIBRARY -> Icons.Filled.LibraryMusic
                                         Tab.SETTINGS -> Icons.Filled.Settings
                                     },
                                     contentDescription = t.label
@@ -196,36 +198,39 @@ private fun MainScreen(viewModel: MusicPlayerViewModel) {
                 .padding(innerPadding)
         ) {
             when {
-                detail is DetailScreen.Album -> DetailScreenHost(
-                    viewModel, detail!!,
-                    onBack = { detail = null }
+                editRequest != null -> EditOrderScreen(
+                    viewModel = viewModel,
+                    request = editRequest!!,
+                    onDone = { editRequest = null }
                 )
-                detail is DetailScreen.Artist -> DetailScreenHost(
-                    viewModel, detail!!,
-                    onBack = { detail = null }
+                detail != null -> DetailScreenHost(
+                    viewModel = viewModel,
+                    detail = detail!!,
+                    onBack = { detail = null },
+                    onEdit = { editRequest = it }
                 )
-                detail is DetailScreen.Playlist -> DetailScreenHost(
-                    viewModel, detail!!,
-                    onBack = { detail = null }
-                )
-                tab == Tab.SONGS -> SongsScreen(viewModel, modifier = Modifier.weight(1f))
-                tab == Tab.ALBUMS -> AlbumsScreen(
-                    viewModel,
+                tab == Tab.HOME -> HomeScreen(
+                    viewModel = viewModel,
                     onOpenAlbum = { detail = DetailScreen.Album(it) },
+                    onOpenArtist = { detail = DetailScreen.Artist(it) },
+                    onOpenPlaylist = { detail = DetailScreen.Playlist(it) },
                     modifier = Modifier.weight(1f)
                 )
-                tab == Tab.ARTISTS -> ArtistsScreen(
-                    viewModel,
+                tab == Tab.SEARCH -> SearchScreen(
+                    viewModel = viewModel,
+                    onOpenAlbum = { detail = DetailScreen.Album(it) },
                     onOpenArtist = { detail = DetailScreen.Artist(it) },
                     modifier = Modifier.weight(1f)
                 )
-                tab == Tab.PLAYLISTS -> PlaylistsScreen(
-                    viewModel,
+                tab == Tab.LIBRARY -> LibraryScreen(
+                    viewModel = viewModel,
+                    onOpenAlbum = { detail = DetailScreen.Album(it) },
+                    onOpenArtist = { detail = DetailScreen.Artist(it) },
                     onOpenPlaylist = { detail = DetailScreen.Playlist(it) },
                     modifier = Modifier.weight(1f)
                 )
                 tab == Tab.SETTINGS -> SettingsScreen(
-                    viewModel,
+                    viewModel = viewModel,
                     modifier = Modifier.weight(1f)
                 )
             }

@@ -77,6 +77,12 @@ class MusicPlayerViewModel : ViewModel() {
     private val _amoled = MutableStateFlow(false)
     val amoled: StateFlow<Boolean> = _amoled.asStateFlow()
 
+    private val _recentSearches = MutableStateFlow<List<String>>(emptyList())
+    val recentSearches: StateFlow<List<String>> = _recentSearches.asStateFlow()
+
+    private val _customOrders = MutableStateFlow<Map<String, List<Long>>>(emptyMap())
+    val customOrders: StateFlow<Map<String, List<Long>>> = _customOrders.asStateFlow()
+
     fun initialize(context: Context) {
         appContext = context.applicationContext
         if (controllerFuture != null) return
@@ -86,6 +92,8 @@ class MusicPlayerViewModel : ViewModel() {
         _recentlyPlayed.value = LocalStore.loadRecentlyPlayed(appContext)
         _playlists.value = LocalStore.loadPlaylists(appContext)
         _amoled.value = LocalStore.loadAmoled(appContext)
+        _recentSearches.value = LocalStore.loadRecentSearches(appContext)
+        _customOrders.value = LocalStore.loadCustomOrders(appContext)
 
         val sessionToken = SessionToken(
             context, ComponentName(context, PlaybackService::class.java)
@@ -269,6 +277,58 @@ class MusicPlayerViewModel : ViewModel() {
         _amoled.value = enabled
         appContext?.let { LocalStore.saveAmoled(it, enabled) }
     }
+
+    fun addRecentSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.length < 2) return
+        val updated = listOf(trimmed) +
+            _recentSearches.value.filterNot { it.equals(trimmed, ignoreCase = true) }
+        _recentSearches.value = updated.take(LocalStore.SEARCH_LIMIT)
+        appContext?.let { LocalStore.saveRecentSearches(it, _recentSearches.value) }
+    }
+
+    fun clearRecentSearches() {
+        _recentSearches.value = emptyList()
+        appContext?.let { LocalStore.saveRecentSearches(it, emptyList()) }
+    }
+
+    fun orderedSongs(storageKey: String, default: List<Song>): List<Song> {
+        val order = _customOrders.value[storageKey] ?: return default
+        val byId = default.associateBy { it.id }
+        val ordered = order.mapNotNull { byId[it] }
+        val rest = default.filter { it.id !in order }
+        return ordered + rest
+    }
+
+    fun applyOrder(storageKey: String, orderedIds: List<Long>) {
+        when {
+            storageKey.startsWith("playlist:") -> {
+                val playlistId = storageKey.removePrefix("playlist:").toLongOrNull() ?: return
+                _playlists.value = _playlists.value.map { playlist ->
+                    if (playlist.id == playlistId) playlist.copy(songIds = orderedIds)
+                    else playlist
+                }
+                appContext?.let { LocalStore.savePlaylists(it, _playlists.value) }
+            }
+            storageKey == "favorites" -> {
+                _favorites.value = orderedIds.toSet()
+                appContext?.let { LocalStore.saveFavorites(it, _favorites.value) }
+            }
+            else -> {
+                _customOrders.value = _customOrders.value + (storageKey to orderedIds)
+                appContext?.let { LocalStore.saveCustomOrder(it, storageKey, orderedIds) }
+            }
+        }
+    }
+
+    fun resetOrder(storageKey: String) {
+        if (storageKey.startsWith("playlist:") || storageKey == "favorites") return
+        _customOrders.value = _customOrders.value - storageKey
+        appContext?.let { LocalStore.clearCustomOrder(it, storageKey) }
+    }
+
+    fun hasCustomOrder(storageKey: String): Boolean =
+        _customOrders.value.containsKey(storageKey)
 
     fun recentlyPlayedSongs(): List<Song> =
         _recentlyPlayed.value.mapNotNull { songsById[it] }
