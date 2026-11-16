@@ -215,6 +215,7 @@ private fun ShortcutGrid(songs: List<Song>, onPlay: (Song) -> Unit) {
     }
 }
 
+@Composable
 private fun Shelf(
     title: String,
     content: LazyListScope.() -> Unit
