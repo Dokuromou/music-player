@@ -1,13 +1,14 @@
 package com.musica.player.ui
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,9 +44,9 @@ fun LibraryScreen(
         )
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            androidx.compose.foundation.lazy.items(LibraryFilter.entries.toList()) { f ->
+            items(LibraryFilter.entries.toList()) { f ->
                 FilterChip(
                     selected = filter == f,
                     onClick = { filter = f },
@@ -54,7 +55,6 @@ fun LibraryScreen(
                 )
             }
         }
-        Spacer(modifier = Modifier.padding(4.dp))
         when (filter) {
             LibraryFilter.PLAYLISTS -> PlaylistsScreen(
                 viewModel = viewModel,
