@@ -11,7 +11,7 @@ object LocalStore {
     private const val KEY_RECENT = "recently_played"
     private const val KEY_PLAYLISTS = "playlists"
     private const val KEY_AMOLED = "amoled"
-    private const val RECENT_LIMIT = 50
+    const val RECENT_LIMIT = 50
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
