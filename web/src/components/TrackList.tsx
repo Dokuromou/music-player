@@ -53,7 +53,7 @@ export function TrackList({
   const currentTrack = useStore((s) => s.currentTrack);
   const playing = useStore((s) => s.playing);
   const playTrack = useStore((s) => s.playTrack);
-  const addToPlaylistId = useStore((s) => s.playlists[0]?.id ?? null);
+  const firstPlaylistId = useStore((s) => (s.playlists.length ? s.playlists[0].id : null));
   const addToPlaylist = useStore((s) => s.addToPlaylist);
   const enqueue = useStore((s) => s.enqueue);
   const [query, setQuery] = useState("");
@@ -112,10 +112,10 @@ export function TrackList({
               <div className="track-actions">
                 <button title="Play next" onClick={() => enqueue([t.id], true)}>↳</button>
                 <button title="Add to queue" onClick={() => enqueue([t.id])}>+</button>
-                {addToPlaylistId && (
+                {firstPlaylistId && (
                   <button
-                    title="Add to first playlist"
-                    onClick={() => addToPlaylist(addToPlaylistId, [t.id])}
+                    title="Add to playlist"
+                    onClick={() => addToPlaylist(firstPlaylistId, [t.id])}
                   >
                     ♥
                   </button>
@@ -134,8 +134,8 @@ export function formatTime(sec: number): string {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = Math.floor(sec % 60);
-  const mm = h > 0 ? (m % 60).toString().padStart(2, "0") : m.toString();
-  return h > 0
-    ? `${h}:${mm}:${s.toString().padStart(2, "0")}`
-    : `{m}:{s.toString().padStart(2, "0")}`;
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
